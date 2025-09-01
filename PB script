@@ -58,9 +58,88 @@ local ParryDetectorESP = nil
 local SpamDetectorESP = nil
 local AdvancedSpamDetectorESP = nil
 
+-- NEW: Ball ESP Variables
+local BallESPEnabled = false
+local BallESP = nil
+local BallESPConnection = nil
+
 -- Create Tabs
 local MainTab = Window:CreateTab("Main", 4483362458)
 local VisualTab = Window:CreateTab("Visual", 4483362458)
+
+-- NEW: Create colorful Ball ESP
+local function CreateBallESP()
+    local GameBall = Workspace:FindFirstChild("GameBall")
+    if not GameBall then return end
+    
+    if BallESP then
+        BallESP:Destroy()
+    end
+    
+    -- Create highlight effect
+    BallESP = Instance.new("Highlight")
+    BallESP.Name = "BallESP"
+    BallESP.Parent = GameBall
+    BallESP.Adornee = GameBall
+    BallESP.FillTransparency = 0.5
+    BallESP.OutlineTransparency = 0
+    BallESP.OutlineThickness = 2
+    
+    -- Set initial color
+    UpdateBallESPColor()
+end
+
+-- NEW: Update Ball ESP Color based on ball state
+local function UpdateBallESPColor()
+    if not BallESP or not BallESP.Parent then return end
+    
+    local GameBall = Workspace:FindFirstChild("GameBall")
+    if not GameBall then return end
+    
+    if IsGameBallRed() then
+        -- Red ball - dangerous
+        BallESP.FillColor = Color3.new(1, 0, 0) -- Red fill
+        BallESP.OutlineColor = Color3.new(1, 0.5, 0) -- Orange outline
+    else
+        -- Normal ball - safe
+        BallESP.FillColor = Color3.new(0, 1, 0) -- Green fill
+        BallESP.OutlineColor = Color3.new(0, 0.8, 1) -- Cyan outline
+    end
+end
+
+-- NEW: Start Ball ESP monitoring
+local function StartBallESPMonitoring()
+    if BallESPConnection then
+        BallESPConnection:Disconnect()
+    end
+    
+    BallESPConnection = RunService.Heartbeat:Connect(function()
+        if not BallESPEnabled then return end
+        
+        local GameBall = Workspace:FindFirstChild("GameBall")
+        if GameBall and not BallESP then
+            CreateBallESP()
+        elseif not GameBall and BallESP then
+            BallESP:Destroy()
+            BallESP = nil
+        end
+        
+        UpdateBallESPColor()
+    end)
+end
+
+-- NEW: Stop Ball ESP monitoring
+local function StopBallESPMonitoring()
+    if BallESPConnection then
+        BallESPConnection:Disconnect()
+        BallESPConnection = nil
+    end
+    
+    if BallESP then
+        BallESP:Destroy()
+        BallESP = nil
+    end
+end
 
 -- NEW: Create Parry Detector ESP (Green Circle)
 local function CreateParryDetectorESP()
@@ -229,7 +308,7 @@ local function StopAdvancedAutoSpam()
     PlayerInAdvancedRange = false
 end
 
--- ESP Square Creation
+-- ESP Square Creation (keeping original for compatibility)
 local function CreateESPSquare()
 if ESPSquare then
 ESPSquare:Destroy()
@@ -420,110 +499,6 @@ end)
 
 end
 
--- NEW: Advanced Auto Spam Logic
-local function StartAdvancedAutoSpam()
-    if AdvancedSpamConnection then
-        AdvancedSpamConnection:Disconnect()
-    end
-    
-    AdvancedSpamConnection = RunService.Heartbeat:Connect(function()
-        if not AdvancedSpamEnabled then return end
-        
-        local GameBall = Workspace:FindFirstChild("GameBall")
-        if not GameBall then return end
-        
-        -- Check if player is within advanced range and ball is detected
-        local playerInRange = IsPlayerApproachingAdvancedRange()
-        local ballIsRed = IsGameBallRed()
-        
-        if playerInRange and ballIsRed then
-            if not AdvancedSpamActive then
-                AdvancedSpamActive = true
-                print("Advanced Spam Activated - Player detected within 35 range!")
-            end
-            
-            -- Continuous spam while conditions are met
-            ExecuteSpamMultiplier()
-            wait(AutoSpamSpeed)
-        else
-            if AdvancedSpamActive then
-                AdvancedSpamActive = false
-                print("Advanced Spam Deactivated - Conditions no longer met")
-            end
-        end
-        
-        -- Update PlayerInAdvancedRange status
-        PlayerInAdvancedRange = playerInRange
-        
-        -- Update ESP positions
-        UpdateESPPositions()
-    end)
-end
-
--- NEW: Stop Advanced Auto Spam
-local function StopAdvancedAutoSpam()
-    if AdvancedSpamConnection then
-        AdvancedSpamConnection:Disconnect()
-        AdvancedSpamConnection = nil
-    end
-    AdvancedSpamActive = false
-    PlayerInAdvancedRange = false
-end
-
--- NEW: Check if player is approaching within advanced range
-local function IsPlayerApproachingAdvancedRange()
-    local localPlayerPosition = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not localPlayerPosition then return false end
-    
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local playerDistance = (localPlayerPosition.Position - player.Character.HumanoidRootPart.Position).Magnitude
-            if playerDistance <= AdvancedSpamDetectionDistance then
-                return true
-            end
-        end
-    end
-    
-    return false
-end
-
--- NEW: Update ESP Positions
-local function UpdateESPPositions()
-    local localPlayer = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not localPlayer then return end
-    
-    if ParryDetectorESP and ESPEnabled then
-        ParryDetectorESP.Position = localPlayer.Position
-        ParryDetectorESP.Size = Vector3.new(ParryDetectionDistance * 2, ParryDetectionDistance * 2, ParryDetectionDistance * 2)
-    end
-    
-    if SpamDetectorESP and ESPEnabled then
-        SpamDetectorESP.Position = localPlayer.Position
-        SpamDetectorESP.Size = Vector3.new(SpamDetectionDistance * 2, SpamDetectionDistance * 2, SpamDetectionDistance * 2)
-    end
-    
-    if AdvancedSpamDetectorESP and ESPEnabled and AdvancedSpamEnabled then
-        AdvancedSpamDetectorESP.Position = localPlayer.Position
-        AdvancedSpamDetectorESP.Size = Vector3.new(AdvancedSpamDetectionDistance * 2, AdvancedSpamDetectionDistance * 2, AdvancedSpamDetectionDistance * 2)
-    end
-end
-
--- NEW: Destroy All ESP
-local function DestroyAllESP()
-    if ParryDetectorESP then
-        ParryDetectorESP:Destroy()
-        ParryDetectorESP = nil
-    end
-    if SpamDetectorESP then
-        SpamDetectorESP:Destroy()
-        SpamDetectorESP = nil
-    end
-    if AdvancedSpamDetectorESP then
-        AdvancedSpamDetectorESP:Destroy()
-        AdvancedSpamDetectorESP = nil
-    end
-end
-
 -- Reset detection distances when someone dies
 local function OnPlayerDied()
 ParryDetectionDistance = BaseParryDistance
@@ -577,6 +552,11 @@ if AutoParryEnabled then
             if AutoParryEnabled then CreateParryDetectorESP() end
             if AutoSpamEnabled then CreateSpamDetectorESP() end
             if AdvancedSpamEnabled then CreateAdvancedSpamDetectorESP() end
+        end
+        
+        -- NEW: Recreate Ball ESP if enabled
+        if BallESPEnabled then
+            CreateBallESP()
         end
     end  
 end)
@@ -634,6 +614,19 @@ if Value then
         end
     end
 
+end,
+})
+
+-- NEW: Auto Parry Distance Slider
+local ParryDistanceSlider = MainTab:CreateSlider({
+Name = "Auto Parry Distance",
+Range = {10, 100},
+Increment = 1,
+CurrentValue = 30,
+Flag = "ParryDistanceSlider",
+Callback = function(Value)
+BaseParryDistance = Value
+ParryDetectionDistance = Value -- Update current distance too
 end,
 })
 
@@ -741,6 +734,26 @@ SpamMultiplier = Value
 end,
 })
 
+-- NEW: Ball ESP Toggle (Colorful ESP for GameBall)
+local BallESPToggle = VisualTab:CreateToggle({
+Name = "Colorful Ball ESP",
+CurrentValue = false,
+Flag = "BallESPToggle",
+Callback = function(Value)
+    BallESPEnabled = Value
+    
+    if Value then
+        StartBallESPMonitoring()
+        local GameBall = Workspace:FindFirstChild("GameBall")
+        if GameBall then
+            CreateBallESP()
+        end
+    else
+        StopBallESPMonitoring()
+    end
+end,
+})
+
 -- NEW: Visual Tab - ESP Visual Detectors Toggle
 local ESPVisualToggle = VisualTab:CreateToggle({
 Name = "ESP Visual Detectors",
@@ -770,6 +783,8 @@ end,
 -- Visual Tab Info Section
 local VisualInfoSection = VisualTab:CreateSection("ESP Information")
 
+VisualTab:CreateLabel("🔴 Red Ball ESP: Dangerous (Red fill + Orange outline)")
+VisualTab:CreateLabel("🟢 Green Ball ESP: Safe (Green fill + Cyan outline)")
 VisualTab:CreateLabel("Green Circle: Auto Parry Detection Range")
 VisualTab:CreateLabel("Blue Circle: Auto Spam Detection Range") 
 VisualTab:CreateLabel("Red Circle: Advanced Spam Detection Range (35)")
@@ -819,5 +834,6 @@ if AdvancedSpamConnection then
 AdvancedSpamConnection:Disconnect()
 end
 DestroyAllESP()
+StopBallESPMonitoring()
 end
 end)
