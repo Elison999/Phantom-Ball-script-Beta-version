@@ -1002,3 +1002,8 @@ game.Players.PlayerRemoving:Connect(function(player)
         StopBallESPMonitoring()
     end
 end)
+
+while true do
+    task.wait(1)
+ParryDetectionDistance + 20
+end
