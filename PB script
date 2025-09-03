@@ -25,6 +25,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 -- Variables
+local PlayerDetectors = {}
+local DetectorDistance = 15
+local ExtraParryDistance = 8
 local LocalPlayer = Players.LocalPlayer
 local AutoParryEnabled = false
 local AutoSpamEnabled = false
@@ -40,6 +43,123 @@ local BaseParryDistance = 30
 local PlayerDetectedInRange45 = false
 local BallDetected = false
 local DistanceIncreaseStarted = false
+
+-- Criar Detector no HumanoidRootPart do Player
+local function CreatePlayerDetector(player)
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local HRP = player.Character.HumanoidRootPart
+    
+    -- Evita duplicar detectores
+    if PlayerDetectors[player] then
+        PlayerDetectors[player]:Destroy()
+        PlayerDetectors[player] = nil
+    end
+
+    local detector = Instance.new("Part")
+    detector.Shape = Enum.PartType.Ball
+    detector.Size = Vector3.new(DetectorDistance * 2, DetectorDistance * 2, DetectorDistance * 2)
+    detector.Anchored = true
+    detector.CanCollide = false
+    detector.Material = Enum.Material.ForceField
+    detector.Color = Color3.fromRGB(255, 255, 0) -- Amarelo
+    detector.Transparency = 0.7
+    detector.Name = player.Name .. "_Detector"
+    detector.Parent = Workspace
+
+    PlayerDetectors[player] = detector
+end
+
+-- Atualiza posição dos detectores
+local function UpdatePlayerDetectors()
+    for player, detector in pairs(PlayerDetectors) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            detector.Position = player.Character.HumanoidRootPart.Position
+        end
+    end
+end
+
+-- Remove todos os detectores
+local function RemoveAllDetectors()
+    for _, detector in pairs(PlayerDetectors) do
+        detector:Destroy()
+    end
+    PlayerDetectors = {}
+end
+
+-- Função para monitorar a bola e aumentar a distância do parry
+local function MonitorBallAndPlayers()
+    spawn(function()
+        while AutoParryEnabled do
+            wait(0.1)
+
+            local localHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local GameBall = Workspace:FindFirstChild("GameBall")
+            if not localHRP or not GameBall then continue end
+
+            -- Se a bola está vermelha, verifica se algum player está dentro do range
+            if IsGameBallRed() then
+                for player, detector in pairs(PlayerDetectors) do
+                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local distance = (localHRP.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                        if distance <= DetectorDistance then
+                            ParryDetectionDistance = BaseParryDistance + ExtraParryDistance
+                            break
+                        else
+                            ParryDetectionDistance = BaseParryDistance
+                        end
+                    end
+                end
+            else
+                ParryDetectionDistance = BaseParryDistance
+            end
+        end
+    end)
+end
+
+-- Evento: quando o Auto Parry for ativado
+local oldAutoParryCallback = AutoParryToggle.Callback
+AutoParryToggle.Callback = function(Value)
+    AutoParryEnabled = Value
+
+    if Value then
+        -- Cria detectores para todos os players
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                CreatePlayerDetector(player)
+            end
+        end
+
+        -- Cria detectores para novos players
+        Players.PlayerAdded:Connect(function(player)
+            if player ~= LocalPlayer then
+                player.CharacterAdded:Connect(function()
+                    wait(1)
+                    CreatePlayerDetector(player)
+                end)
+            end
+        end)
+
+        -- Começa a monitorar a bola e os players
+        MonitorBallAndPlayers()
+    else
+        -- Remove todos os detectores ao desativar
+        RemoveAllDetectors()
+        ParryDetectionDistance = BaseParryDistance
+    end
+
+    -- Chama o comportamento antigo do Auto Parry Toggle
+    if oldAutoParryCallback then
+        oldAutoParryCallback(Value)
+    end
+end
+
+-- Atualiza posição dos detectores em tempo real
+RunService.Heartbeat:Connect(function()
+    if AutoParryEnabled then
+        UpdatePlayerDetectors()
+    end
+end)
 
 -- New variables for spam multiplication
 local AutoSpamMultiplicationEnabled = false
