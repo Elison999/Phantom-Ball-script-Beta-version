@@ -558,11 +558,11 @@ local function StartAutoParry()
         local playerInRange45 = IsPlayerWithinDistance(26)  
         if playerInRange45 and not PlayerDetectedInRange45 then  
             -- Player entered range, increase distance  
-            ParryDetectionDistance = ParryDetectionDistance + 10  
+            ParryDetectionDistance = ParryDetectionDistance + 7.5  
             PlayerDetectedInRange45 = true  
         elseif not playerInRange45 and PlayerDetectedInRange45 then  
             -- Player left range, decrease distance  
-            ParryDetectionDistance = math.max(ParryDetectionDistance - 10, BaseParryDistance)  
+            ParryDetectionDistance = math.max(ParryDetectionDistance - 7.5, BaseParryDistance)  
             PlayerDetectedInRange45 = false  
         end  
           
