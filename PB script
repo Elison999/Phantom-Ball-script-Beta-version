@@ -141,7 +141,7 @@ local function StartAutoSpamV2()
             
             -- Ultra-fast spam at 0.00000000000000000001 speed
             ExecuteSpamMultiplier()
-            wait(0.00000000000000000001)
+            wait(0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)
         else
             if AutoSpamV2Active then
                 AutoSpamV2Active = false
@@ -507,10 +507,10 @@ end
 -- Execute multiple parries for spam multiplication
 local function ExecuteSpamMultiplier()
     if AutoSpamMultiplicationEnabled then
-        for i = 1, SpamMultiplier do
+        for i = 5, SpamMultiplier do
             ExecuteParry()
             if i < SpamMultiplier then
-                wait(0.001) -- Small delay between multiple executions
+                wait(0.00000000000001) -- Small delay between multiple executions
             end
         end
     else
