@@ -52,11 +52,11 @@ local AdvancedSpamDetectionDistance = 35
 local PlayerInAdvancedRange = false
 local AdvancedSpamActive = false
 
--- NEW: Auto Spam V2 Variables
+-- NEW: Auto Spam V2 Variables (Modified)
 local AutoSpamV2Enabled = false
 local AutoSpamV2Connection = nil
-local AutoSpamV2Distance = 28
 local AutoSpamV2Active = false
+local AutoSpamV2Speed = 0.00000000000000000001
 
 -- ESP Variables
 local ESPEnabled = false
@@ -74,44 +74,30 @@ local BallESPConnection = nil
 local MainTab = Window:CreateTab("Main", 4483362458)
 local VisualTab = Window:CreateTab("Visual", 4483362458)
 
--- NEW: Check if player has highlight
-local function PlayerHasHighlight(player)
-    if not player.Character then return false end
-    
-    -- Check for highlight in character
-    local highlight = player.Character:FindFirstChild("Highlight")
-    if highlight then return true end
-    
-    -- Check for highlight in any child parts
-    for _, child in pairs(player.Character:GetChildren()) do
-        if child:FindFirstChild("Highlight") then
-            return true
-        end
-    end
-    
-    return false
-end
-
--- NEW: Check for highlighted players within V2 distance
-local function IsHighlightedPlayerWithinV2Distance()
+-- NEW: Check for player and GameBall within spam distance
+local function IsPlayerAndBallWithinRange()
     local localPlayerPosition = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not localPlayerPosition then return false end
     
+    local GameBall = Workspace:FindFirstChild("GameBall")
+    if not GameBall then return false end
+    
+    -- Check if there's any player within spam detection distance
+    local playerInRange = false
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            if PlayerHasHighlight(player) then
-                local playerDistance = (localPlayerPosition.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                if playerDistance <= AutoSpamV2Distance then
-                    return true
-                end
+            local playerDistance = (localPlayerPosition.Position - player.Character.HumanoidRootPart.Position).Magnitude
+            if playerDistance <= SpamDetectionDistance then
+                playerInRange = true
+                break
             end
         end
     end
     
-    return false
+    return playerInRange
 end
 
--- NEW: Create Auto Spam V2 Detector ESP (Purple Circle)
+-- NEW: Create Auto Spam V2 Detector ESP (Purple Circle) - Uses spam detection distance
 local function CreateAutoSpamV2DetectorESP()
     if AutoSpamV2DetectorESP then
         AutoSpamV2DetectorESP:Destroy()
@@ -129,11 +115,11 @@ local function CreateAutoSpamV2DetectorESP()
     AutoSpamV2DetectorESP.BrickColor = BrickColor.new("Bright violet")
     AutoSpamV2DetectorESP.Material = Enum.Material.Neon
     AutoSpamV2DetectorESP.Shape = Enum.PartType.Ball
-    AutoSpamV2DetectorESP.Size = Vector3.new(AutoSpamV2Distance * 2, AutoSpamV2Distance * 2, AutoSpamV2Distance * 2)
+    AutoSpamV2DetectorESP.Size = Vector3.new(SpamDetectionDistance * 2, SpamDetectionDistance * 2, SpamDetectionDistance * 2)
     AutoSpamV2DetectorESP.Position = localPlayer.Position
 end
 
--- NEW: Auto Spam V2 Logic
+-- NEW: Auto Spam V2 Logic (Modified)
 local function StartAutoSpamV2()
     if AutoSpamV2Connection then
         AutoSpamV2Connection:Disconnect()
@@ -142,22 +128,18 @@ local function StartAutoSpamV2()
     AutoSpamV2Connection = RunService.Heartbeat:Connect(function()
         if not AutoSpamV2Enabled then return end
         
-        local GameBall = Workspace:FindFirstChild("GameBall")
-        if not GameBall then return end
+        -- Check if player and GameBall are both detected within range
+        local playerAndBallInRange = IsPlayerAndBallWithinRange()
         
-        -- Check if highlighted player is within V2 range and ball is red
-        local highlightedPlayerInRange = IsHighlightedPlayerWithinV2Distance()
-        local ballIsRed = IsGameBallRed()
-        
-        if highlightedPlayerInRange and ballIsRed then
+        if playerAndBallInRange then
             if not AutoSpamV2Active then
                 AutoSpamV2Active = true
-                print("Auto Spam V2 Activated - Highlighted player detected within range!")
+                print("Auto Spam V2 Activated - Player and GameBall detected within range!")
             end
             
-            -- Continuous spam while conditions are met
+            -- Execute spam at ultra-fast speed
             ExecuteSpamMultiplier()
-            wait(AutoSpamSpeed)
+            wait(AutoSpamV2Speed)
         else
             if AutoSpamV2Active then
                 AutoSpamV2Active = false
@@ -336,10 +318,10 @@ local function UpdateESPPositions()
         AdvancedSpamDetectorESP.Size = Vector3.new(AdvancedSpamDetectionDistance * 2, AdvancedSpamDetectionDistance * 2, AdvancedSpamDetectionDistance * 2)
     end
     
-    -- NEW: Update Auto Spam V2 ESP
+    -- NEW: Update Auto Spam V2 ESP (uses spam detection distance)
     if AutoSpamV2DetectorESP and ESPEnabled and AutoSpamV2Enabled then
         AutoSpamV2DetectorESP.Position = localPlayer.Position
-        AutoSpamV2DetectorESP.Size = Vector3.new(AutoSpamV2Distance * 2, AutoSpamV2Distance * 2, AutoSpamV2Distance * 2)
+        AutoSpamV2DetectorESP.Size = Vector3.new(SpamDetectionDistance * 2, SpamDetectionDistance * 2, SpamDetectionDistance * 2)
     end
 end
 
@@ -805,9 +787,9 @@ local AdvancedAutoSpamToggle = MainTab:CreateToggle({
     end,
 })
 
--- NEW: Auto Spam V2 Toggle
+-- NEW: Auto Spam V2 Toggle (Modified)
 local AutoSpamV2Toggle = MainTab:CreateToggle({
-    Name = "Auto Spam V2 (Highlight Detection)",
+    Name = "Auto Spam V2",
     CurrentValue = false,
     Flag = "AutoSpamV2Toggle",
     Callback = function(Value)
@@ -832,55 +814,9 @@ local AutoSpamV2Toggle = MainTab:CreateToggle({
     end,
 })
 
--- NEW: Auto Spam V2 Distance Slider
-local AutoSpamV2DistanceSlider = MainTab:CreateSlider({
-    Name = "Auto Spam V2 Distance",
-    Range = {28, 70},
-    Increment = 1,
-    CurrentValue = 28,
-    Flag = "AutoSpamV2DistanceSlider",
-    Callback = function(Value)
-        AutoSpamV2Distance = Value
-    end,
-})
-
 -- Auto Spam Multiplication Toggle
 local AutoSpamMultiplicationToggle = MainTab:CreateToggle({
     Name = "Auto Spam Multiplication",
-    CurrentValue = false,
-    Flag = "AutoSpamMultiplicationToggle",
-    Callback = function(Value)
-        AutoSpamMultiplicationEnabled = Value
-    end,
-})
-
--- Auto Spam Speed Slider
-local SpamSpeedSlider = MainTab:CreateSlider({
-    Name = "Auto Spam Speed",
-    Range = {0.0000001, 1},
-    Increment = 0.0000001,
-    CurrentValue = 0.0000001,
-    Flag = "SpamSpeedSlider",
-    Callback = function(Value)
-        AutoSpamSpeed = Value
-    end,
-})
-
--- Auto Spam Distance Slider
-local SpamDistanceSlider = MainTab:CreateSlider({
-    Name = "Auto Spam Distance",
-    Range = {10, 100},
-    Increment = 1,
-    CurrentValue = 30,
-    Flag = "SpamDistanceSlider",
-    Callback = function(Value)
-        SpamDetectionDistance = Value
-    end,
-})
-
--- Auto Spam Multiplication Slider
-local SpamMultiplierSlider = MainTab:CreateSlider({
-    Name = "Auto Spam Multiplier",
     Range = {1, 10},
     Increment = 1,
     CurrentValue = 1,
