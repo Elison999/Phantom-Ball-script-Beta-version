@@ -25,6 +25,21 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 -- Variables
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local gameBall = workspace:FindFirstChild("GameBall")
+local isOrbiting = false
+local orbitConnection = nil
+local orbitSpeed = 1
+local orbitDistance = 10
+local orbitAngle = 0
+
 local LocalPlayer = Players.LocalPlayer
 local AutoParryEnabled = false
 local AutoSpamEnabled = false
@@ -70,9 +85,63 @@ local BallESPEnabled = false
 local BallESP = nil
 local BallESPConnection = nil
 
+-- Function to start orbiting
+local function startOrbit()
+    if not gameBall then
+        Rayfield:Notify({
+            Title = "Error",
+            Content = "GameBall not found in workspace!",
+            Duration = 3,
+            Image = 4483362458
+        })
+        return
+    end
+    
+    isOrbiting = true
+    orbitConnection = RunService.Heartbeat:Connect(function()
+        if isOrbiting and gameBall and character and humanoidRootPart then
+            -- Update angle based on speed
+            orbitAngle = orbitAngle + (orbitSpeed * 0.1)
+            
+            -- Calculate new orbit position
+            local gameBallPosition = gameBall.Position
+            local x = gameBallPosition.X + (orbitDistance * math.cos(orbitAngle))
+            local z = gameBallPosition.Z + (orbitDistance * math.sin(orbitAngle))
+            local y = gameBallPosition.Y
+            
+            -- Move player to new position
+            humanoidRootPart.CFrame = CFrame.new(Vector3.new(x, y, z), gameBallPosition)
+        end
+    end)
+    
+    Rayfield:Notify({
+        Title = "Orbit Started",
+        Content = "Now orbiting around GameBall!",
+        Duration = 2,
+        Image = 4483362458
+    })
+end
+
+-- Function to stop orbiting
+local function stopOrbit()
+    isOrbiting = false
+    if orbitConnection then
+        orbitConnection:Disconnect()
+        orbitConnection = nil
+    end
+    
+    Rayfield:Notify({
+        Title = "Orbit Stopped",
+        Content = "Orbit system deactivated.",
+        Duration = 2,
+        Image = 4483362458
+    })
+end
+
 -- Create Tabs
 local MainTab = Window:CreateTab("Main", 4483362458)
 local VisualTab = Window:CreateTab("Visual", 4483362458)
+local BallTab = Window:CreateTab("Ball", 4483362458)
 
 -- NEW: Auto Spam V2 Detection Function
 local function IsPlayerAndBallWithinV2Range()
@@ -953,6 +1022,88 @@ spawn(function()
             UpdateESPPositions()
         end
     end
+end)
+
+-- Toggle to enable/disable orbit
+local OrbitToggle = MainTab:CreateToggle({
+   Name = "Orbit GameBall",
+   CurrentValue = false,
+   Flag = "OrbitToggle",
+   Callback = function(Value)
+        if Value then
+            startOrbit()
+        else
+            stopOrbit()
+        end
+   end,
+})
+
+-- Slider for orbit speed
+local SpeedSlider = BallTab:CreateSlider({
+   Name = "Orbit Speed",
+   Range = {0.1, 5},
+   Increment = 0.1,
+   Suffix = "x",
+   CurrentValue = 1,
+   Flag = "SpeedSlider",
+   Callback = function(Value)
+        orbitSpeed = Value
+   end,
+})
+
+-- Slider for orbit distance
+local DistanceSlider = BallTab:CreateSlider({
+   Name = "Orbit Distance",
+   Range = {5, 50},
+   Increment = 1,
+   Suffix = " studs",
+   CurrentValue = 10,
+   Flag = "DistanceSlider",
+   Callback = function(Value)
+        orbitDistance = Value
+   end,
+})
+
+-- Information section
+BallTab:CreateSection("Information")
+
+BallTab:CreateParagraph({
+    Title = "How to use:",
+    Content = "1. Enable the 'Orbit GameBall' toggle\n2. Adjust the speed (0.1x - 5x)\n3. Adjust the distance (5 - 50 studs)\n4. Disable the toggle to stop orbiting"
+})
+
+-- Button to find GameBall
+BallTab:CreateButton({
+   Name = "Check for GameBall",
+   Callback = function()
+        gameBall = workspace:FindFirstChild("GameBall")
+        if gameBall then
+            Rayfield:Notify({
+                Title = "GameBall Found!",
+                Content = "Position: " .. tostring(gameBall.Position),
+                Duration = 3,
+                Image = 4483362458
+            })
+        else
+            Rayfield:Notify({
+                Title = "GameBall Not Found",
+                Content = "Make sure there's an object named 'GameBall' in workspace",
+                Duration = 4,
+                Image = 4483362458
+            })
+        end
+   end,
+})
+
+-- Cleanup when player leaves
+player.CharacterRemoving:Connect(function()
+    stopOrbit()
+end)
+
+-- Update character references
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 end)
 
 -- Cleanup on script end
