@@ -613,14 +613,14 @@ local function StartAutoParry()
           
         -- Check for players within 40 distance to adjust cooldown  
         local closestPlayerDistance = GetClosestPlayerDistance()  
-        if closestPlayerDistance <= 40 then  
-            currentCooldown = 0.1 -- Faster when player nearby  
+        if closestPlayerDistance <= 50 then  
+            currentCooldown = 0.07 -- Faster when player nearby  
         else  
             currentCooldown = 0.6 -- Normal speed  
         end  
           
         -- Check for players within 45 distance to adjust parry detection distance  
-        local playerInRange45 = IsPlayerWithinDistance(26)  
+        local playerInRange45 = IsPlayerWithinDistance(40)  
         if playerInRange45 and not PlayerDetectedInRange45 then  
             -- Player entered range, increase distance  
             ParryDetectionDistance = ParryDetectionDistance + 7.5  
@@ -789,9 +789,9 @@ end
 
 -- Função para mover a câmera instantaneamente
 local function moveCameraInstantly()
-    local randomX = math.random(-10, 10)
-    local randomY = math.random(-5, 5)
-    local randomZ = math.random(-10, 10)
+    local randomX = math.random(-90, 90)
+    local randomY = math.random(-80, 80)
+    local randomZ = math.random(-90, 90)
     
     Camera.CFrame = Camera.CFrame * CFrame.Angles(
         math.rad(randomX), 
@@ -800,7 +800,7 @@ local function moveCameraInstantly()
     )
     
     -- Volta ao normal após um breve momento
-    wait(0.1)
+    wait(0.01)
     Camera.CFrame = normalCFrame
 end
 
