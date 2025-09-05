@@ -613,7 +613,7 @@ local function StartAutoParry()
           
         -- Check for players within 40 distance to adjust cooldown  
         local closestPlayerDistance = GetClosestPlayerDistance()  
-        if closestPlayerDistance <= 50 then  
+        if closestPlayerDistance <= 35 then  
             currentCooldown = 0.07 -- Faster when player nearby  
         else  
             currentCooldown = 0.6 -- Normal speed  
