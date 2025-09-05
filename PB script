@@ -23,6 +23,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local Camera = workspace.CurrentCamera
 
 -- Variables
 local Players = game:GetService("Players")
@@ -55,6 +56,13 @@ local BaseParryDistance = 30
 local PlayerDetectedInRange45 = false
 local BallDetected = false
 local DistanceIncreaseStarted = false
+
+local player = Players.LocalPlayer
+local lookAtBallEnabled = false
+local autoCurveEnabled = false
+local normalCFrame = Camera.CFrame
+local curveConnection
+local lookConnection
 
 -- New variables for spam multiplication
 local AutoSpamMultiplicationEnabled = false
@@ -142,6 +150,7 @@ end
 local MainTab = Window:CreateTab("Main", 4483362458)
 local VisualTab = Window:CreateTab("Visual", 4483362458)
 local BallTab = Window:CreateTab("Ball", 4483362458)
+local CurveTab = Window:CreateTab("Curve", 4483362458)
 
 -- NEW: Auto Spam V2 Detection Function
 local function IsPlayerAndBallWithinV2Range()
@@ -751,7 +760,89 @@ spawn(function()
     end
 end)
 
+local function findGameBall()
+    return Workspace:FindFirstChild("GameBall")
+end
+
+-- Função para encontrar players próximos
+local function findNearbyPlayers(maxDistance)
+    local nearbyPlayers = {}
+    local playerCharacter = player.Character
+    
+    if not playerCharacter or not playerCharacter:FindFirstChild("HumanoidRootPart") then
+        return nearbyPlayers
+    end
+    
+    local playerPosition = playerCharacter.HumanoidRootPart.Position
+    
+    for _, otherPlayer in pairs(Players:GetPlayers()) do
+        if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local distance = (otherPlayer.Character.HumanoidRootPart.Position - playerPosition).Magnitude
+            if distance <= maxDistance then
+                table.insert(nearbyPlayers, otherPlayer)
+            end
+        end
+    end
+    
+    return nearbyPlayers
+end
+
+-- Função para mover a câmera instantaneamente
+local function moveCameraInstantly()
+    local randomX = math.random(-10, 10)
+    local randomY = math.random(-5, 5)
+    local randomZ = math.random(-10, 10)
+    
+    Camera.CFrame = Camera.CFrame * CFrame.Angles(
+        math.rad(randomX), 
+        math.rad(randomY), 
+        math.rad(randomZ)
+    )
+    
+    -- Volta ao normal após um breve momento
+    wait(0.1)
+    Camera.CFrame = normalCFrame
+end
+
+-- Função para olhar para a GameBall
+local function lookAtGameBall()
+    local gameBall = findGameBall()
+    if gameBall and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local ballPosition = gameBall.Position
+        local characterPosition = player.Character.HumanoidRootPart.Position
+        
+        -- Calcula a direção para olhar
+        local direction = (ballPosition - characterPosition).Unit
+        local lookDirection = CFrame.lookAt(characterPosition, ballPosition)
+        
+        -- Define a câmera para olhar na direção da bola
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, ballPosition)
+    end
+end
+
 -- TOGGLES AND SLIDERS
+
+local LookAtBallToggle = MainTab:CreateToggle({
+    Name = "look at Ball",
+    CurrentValue = false,
+    Flag = "LookAtBall",
+    Callback = function(Value)
+        lookAtBallEnabled = Value
+        
+        if lookAtBallEnabled then
+            lookConnection = RunService.RenderStepped:Connect(function()
+                if lookAtBallEnabled then
+                    lookAtGameBall()
+                end
+            end)
+        else
+            if lookConnection then
+                lookConnection:Disconnect()
+                lookConnection = nil
+            end
+        end
+    end,
+})
 
 -- Auto Parry Toggle
 local AutoParryToggle = MainTab:CreateToggle({
@@ -1093,6 +1184,51 @@ BallTab:CreateButton({
             })
         end
    end,
+})
+
+local AutoCurveToggle = CurveTab:CreateToggle({
+    Name = "Auto Curve Ball",
+    CurrentValue = false,
+    Flag = "AutoCurve",
+    Callback = function(Value)
+        autoCurveEnabled = Value
+        
+        if autoCurveEnabled then
+            curveConnection = RunService.Heartbeat:Connect(function()
+                if not autoCurveEnabled then return end
+                
+                local gameBall = findGameBall()
+                if not gameBall then return end
+                
+                -- Verifica se a bola está próxima (distância 13)
+                local playerCharacter = player.Character
+                if not playerCharacter or not playerCharacter:FindFirstChild("HumanoidRootPart") then
+                    return
+                end
+                
+                local ballDistance = (gameBall.Position - playerCharacter.HumanoidRootPart.Position).Magnitude
+                
+                -- Se a bola está próxima (distância 13) e é vermelha
+                if ballDistance <= 13 and gameBall.BrickColor == BrickColor.new("Really red") then
+                    -- Verifica se não há players próximos (distância 35)
+                    local nearbyPlayers = findNearbyPlayers(35)
+                    
+                    if #nearbyPlayers == 0 then
+                        -- Salva a posição atual da câmera
+                        normalCFrame = Camera.CFrame
+                        
+                        -- Move a câmera instantaneamente
+                        moveCameraInstantly()
+                    end
+                end
+            end)
+        else
+            if curveConnection then
+                curveConnection:Disconnect()
+                curveConnection = nil
+            end
+        end
+    end,
 })
 
 -- Cleanup when player leaves
