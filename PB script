@@ -1209,7 +1209,7 @@ local AutoCurveToggle = CurveTab:CreateToggle({
                 local ballDistance = (gameBall.Position - playerCharacter.HumanoidRootPart.Position).Magnitude
                 
                 -- Se a bola está próxima (distância 13) e é vermelha
-                if ballDistance <= 13 and gameBall.BrickColor == BrickColor.new("Really red") then
+                if ballDistance <= 17 and gameBall.BrickColor == BrickColor.new("Really red") then
                     -- Verifica se não há players próximos (distância 35)
                     local nearbyPlayers = findNearbyPlayers(35)
                     
