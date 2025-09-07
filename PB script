@@ -64,9 +64,12 @@ local normalCFrame = Camera.CFrame
 local curveConnection
 local lookConnection
 
+local floatingButtonEnabled = false
 local floatingButton = nil
-local isFloatingActive = false
 local connection = nil
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 -- New variables for spam multiplication
 local AutoSpamMultiplicationEnabled = false
@@ -101,39 +104,61 @@ local function executeCode()
     local args = {
         [1] = 2.933813859058389e+76
     }
+
     game:GetService("ReplicatedStorage").TS.GeneratedNetworkRemotes:FindFirstChild("RE_4.6848415795802784e+76"):FireServer(unpack(args))
 end
 
 local function createFloatingButton()
-    -- Criar ScreenGui
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "FloatingButtonGui"
-    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    -- Criar o botão
+    -- Configurar para mobile
+    if UserInputService.TouchEnabled then
+        screenGui.DisplayOrder = 10
+    end
+    
     local button = Instance.new("TextButton")
     button.Name = "FloatingButton"
-    button.Parent = screenGui
-    button.Size = UDim2.new(0, 100, 0, 50)
-    button.Position = UDim2.new(0, 50, 0, 50)
-    button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    button.Size = UDim2.new(0, 80, 0, 80)
+    button.Position = UDim2.new(0, 20, 0.5, -40)
+    button.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
+    button.BorderSizePixel = 0
+    button.Font = Enum.Font.GothamBold
+    button.TextColor3 = Color3.white
+    button.TextSize = 14
     button.Text = "OFF"
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextScaled = true
-    button.Font = Enum.Font.SourceSansBold
+    button.Parent = screenGui
     
-    -- Bordas arredondadas
+    -- Arredondar cantos
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 40)
     corner.Parent = button
+    
+    -- Adicionar sombra
+    local shadow = Instance.new("Frame")
+    shadow.Name = "Shadow"
+    shadow.Size = UDim2.new(1, 6, 1, 6)
+    shadow.Position = UDim2.new(0, -3, 0, -3)
+    shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+    shadow.BackgroundTransparency = 0.7
+    shadow.ZIndex = button.ZIndex - 1
+    shadow.Parent = button
+    
+    local shadowCorner = Instance.new("UICorner")
+    shadowCorner.CornerRadius = UDim.new(0, 43)
+    shadowCorner.Parent = shadow
+    
+    screenGui.Parent = game:GetService("CoreGui")
     
     -- Variáveis para arrastar
     local dragging = false
     local dragStart = nil
     local startPos = nil
+    local isActive = false
     
-    -- Função de arrastar
+    -- Função para fazer o botão arrastável (compatível com mobile)
     button.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
@@ -151,52 +176,47 @@ local function createFloatingButton()
     
     button.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-    
-    -- Função de clique do botão flutuante
-    button.MouseButton1Click:Connect(function()
-        if not dragging then
-            isFloatingActive = not isFloatingActive
-            
-            if isFloatingActive then
-                button.Text = "ON"
-                button.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+            if dragging then
+                dragging = false
                 
-                -- Iniciar execução contínua
-                connection = game:GetService("RunService").Heartbeat:Connect(function()
-                    executeCode()
-                end)
-            else
-                button.Text = "OFF"
-                button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-                
-                -- Parar execução
-                if connection then
-                    connection:Disconnect()
-                    connection = nil
+                -- Se não arrastou muito, considera como clique
+                local dragDistance = (input.Position - dragStart).Magnitude
+                if dragDistance < 10 then
+                    -- Toggle do estado
+                    isActive = not isActive
+                    
+                    if isActive then
+                        button.Text = "ON"
+                        button.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
+                        
+                        -- Inicia a execução contínua
+                        connection = RunService.Heartbeat:Connect(function()
+                            executeCode()
+                        end)
+                    else
+                        button.Text = "OFF"
+                        button.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
+                        
+                        -- Para a execução
+                        if connection then
+                            connection:Disconnect()
+                            connection = nil
+                        end
+                    end
+                    
+                    -- Animação de clique
+                    local clickTween = TweenService:Create(button, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 75, 0, 75)})
+                    clickTween:Play()
+                    clickTween.Completed:Connect(function()
+                        local backTween = TweenService:Create(button, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 80, 0, 80)})
+                        backTween:Play()
+                    end)
                 end
             end
         end
     end)
     
     return screenGui
-end
-
--- Função para remover o botão flutuante
-local function removeFloatingButton()
-    if floatingButton then
-        -- Parar execução se estiver ativa
-        if connection then
-            connection:Disconnect()
-            connection = nil
-        end
-        
-        floatingButton:Destroy()
-        floatingButton = nil
-        isFloatingActive = false
-    end
 end
 
 -- Function to start orbiting
@@ -1001,17 +1021,28 @@ local ParryDistanceSlider = MainTab:CreateSlider({
     end,
 })
 
-local Toggle = MainTab:CreateToggle({
-    Name = "manual spam",
+local Toggle = Tab:CreateToggle({
+    Name = "Manual Spam",
     CurrentValue = false,
-    Flag = "FloatingToggle",
+    Flag = "FloatingButtonToggle",
     Callback = function(Value)
+        floatingButtonEnabled = Value
+        
         if Value then
-            -- Ativar botão flutuante
+            -- Criar botão flutuante
             floatingButton = createFloatingButton()
         else
-            -- Desativar botão flutuante
-            removeFloatingButton()
+            -- Remover botão flutuante
+            if floatingButton then
+                floatingButton:Destroy()
+                floatingButton = nil
+            end
+            
+            -- Parar execução se estiver ativa
+            if connection then
+                connection:Disconnect()
+                connection = nil
+            end
         end
     end,
 })
