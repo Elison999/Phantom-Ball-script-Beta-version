@@ -64,6 +64,10 @@ local normalCFrame = Camera.CFrame
 local curveConnection
 local lookConnection
 
+local floatingButton = nil
+local isFloatingActive = false
+local connection = nil
+
 -- New variables for spam multiplication
 local AutoSpamMultiplicationEnabled = false
 local SpamMultiplier = 1
@@ -92,6 +96,108 @@ local AutoSpamV2DetectorESP = nil
 local BallESPEnabled = false
 local BallESP = nil
 local BallESPConnection = nil
+
+local function executeCode()
+    local args = {
+        [1] = 2.933813859058389e+76
+    }
+    game:GetService("ReplicatedStorage").TS.GeneratedNetworkRemotes:FindFirstChild("RE_4.6848415795802784e+76"):FireServer(unpack(args))
+end
+
+local function createFloatingButton()
+    -- Criar ScreenGui
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "FloatingButtonGui"
+    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    screenGui.ResetOnSpawn = false
+    
+    -- Criar o botão
+    local button = Instance.new("TextButton")
+    button.Name = "FloatingButton"
+    button.Parent = screenGui
+    button.Size = UDim2.new(0, 100, 0, 50)
+    button.Position = UDim2.new(0, 50, 0, 50)
+    button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    button.Text = "OFF"
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextScaled = true
+    button.Font = Enum.Font.SourceSansBold
+    
+    -- Bordas arredondadas
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = button
+    
+    -- Variáveis para arrastar
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    -- Função de arrastar
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = button.Position
+        end
+    end)
+    
+    button.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+    
+    -- Função de clique do botão flutuante
+    button.MouseButton1Click:Connect(function()
+        if not dragging then
+            isFloatingActive = not isFloatingActive
+            
+            if isFloatingActive then
+                button.Text = "ON"
+                button.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+                
+                -- Iniciar execução contínua
+                connection = game:GetService("RunService").Heartbeat:Connect(function()
+                    executeCode()
+                end)
+            else
+                button.Text = "OFF"
+                button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+                
+                -- Parar execução
+                if connection then
+                    connection:Disconnect()
+                    connection = nil
+                end
+            end
+        end
+    end)
+    
+    return screenGui
+end
+
+-- Função para remover o botão flutuante
+local function removeFloatingButton()
+    if floatingButton then
+        -- Parar execução se estiver ativa
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+        
+        floatingButton:Destroy()
+        floatingButton = nil
+        isFloatingActive = false
+    end
+end
 
 -- Function to start orbiting
 local function startOrbit()
@@ -892,6 +998,21 @@ local ParryDistanceSlider = MainTab:CreateSlider({
     Callback = function(Value)
         BaseParryDistance = Value
         ParryDetectionDistance = Value -- Update current distance too
+    end,
+})
+
+local Toggle = MainTab:CreateToggle({
+    Name = "manual spam",
+    CurrentValue = false,
+    Flag = "FloatingToggle",
+    Callback = function(Value)
+        if Value then
+            -- Ativar botão flutuante
+            floatingButton = createFloatingButton()
+        else
+            -- Desativar botão flutuante
+            removeFloatingButton()
+        end
     end,
 })
 
