@@ -614,7 +614,7 @@ local function StartAutoParry()
         -- Check for players within 40 distance to adjust cooldown  
         local closestPlayerDistance = GetClosestPlayerDistance()  
         if closestPlayerDistance <= 40 then  
-            currentCooldown = 0.07 -- Faster when player nearby  
+            currentCooldown = 0.2 -- Faster when player nearby  
         else  
             currentCooldown = 0.6 -- Normal speed  
         end  
@@ -1209,7 +1209,7 @@ local AutoCurveToggle = CurveTab:CreateToggle({
                 local ballDistance = (gameBall.Position - playerCharacter.HumanoidRootPart.Position).Magnitude
                 
                 -- Se a bola está próxima (distância 13) e é vermelha
-                if ballDistance <= 17 and gameBall.BrickColor == BrickColor.new("Really red") then
+                if ballDistance <= 20 and gameBall.BrickColor == BrickColor.new("Really red") then
                     -- Verifica se não há players próximos (distância 35)
                     local nearbyPlayers = findNearbyPlayers(35)
                     
