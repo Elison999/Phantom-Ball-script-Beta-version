@@ -98,140 +98,6 @@ local BallESPEnabled = false
 local BallESP = nil
 local BallESPConnection = nil
 
-local function executarCodigo()
-    local args = {
-        [1] = 2.933813859058389e+76
-    }
-    
-    game:GetService("ReplicatedStorage").TS.GeneratedNetworkRemotes:FindFirstChild("RE_4.6848415795802784e+76"):FireServer(unpack(args))
-end
-
--- Função para criar o botão flutuante
-local function criarBotaoFlutuante()
-    -- Criar ScreenGui
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "BotaoFlutuanteGui"
-    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    screenGui.ResetOnSpawn = false
-    
-    -- Criar Frame do botão
-    local botao = Instance.new("TextButton")
-    botao.Name = "BotaoFlutuante"
-    botao.Size = UDim2.new(0, 80, 0, 80)
-    botao.Position = UDim2.new(0, 20, 0.5, -40)
-    botao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    botao.BorderSizePixel = 0
-    botao.Text = "OFF"
-    botao.TextColor3 = Color3.fromRGB(255, 255, 255)
-    botao.TextSize = 16
-    botao.Font = Enum.Font.SourceSansBold
-    botao.Parent = screenGui
-    
-    -- Adicionar UICorner para deixar redondo
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0.5, 0)
-    corner.Parent = botao
-    
-    -- Adicionar UIStroke para borda
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(100, 100, 100)
-    stroke.Thickness = 2
-    stroke.Parent = botao
-    
-    -- Sistema de arrastar para mobile
-    local UserInputService = game:GetService("UserInputService")
-    local TweenService = game:GetService("TweenService")
-    
-    local dragging = false
-    local dragStart = nil
-    local startPos = nil
-    
-    -- Função para começar a arrastar
-    local function startDrag(input)
-        dragging = true
-        dragStart = input.Position
-        startPos = botao.Position
-    end
-    
-    -- Função para atualizar posição durante o arraste
-    local function updateDrag(input)
-        if dragging then
-            local delta = input.Position - dragStart
-            botao.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end
-    
-    -- Função para parar de arrastar
-    local function stopDrag()
-        dragging = false
-    end
-    
-    -- Eventos de toque para mobile
-    botao.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            startDrag(input)
-        end
-    end)
-    
-    botao.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            updateDrag(input)
-        end
-    end)
-    
-    botao.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            stopDrag()
-        end
-    end)
-    
-    -- Funcionalidade do toggle
-    botao.Activated:Connect(function()
-        if not dragging then
-            executandoLoop = not executandoLoop
-            
-            if executandoLoop then
-                botao.Text = "ON"
-                botao.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-                stroke.Color = Color3.fromRGB(0, 200, 0)
-                
-                -- Iniciar loop de execução
-                loopConnection = game:GetService("RunService").Heartbeat:Connect(function()
-                    wait(0.001)
-                    executarCodigo()
-                end)
-            else
-                botao.Text = "OFF"
-                botao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-                stroke.Color = Color3.fromRGB(100, 100, 100)
-                
-                -- Parar loop de execução
-                if loopConnection then
-                    loopConnection:Disconnect()
-                    loopConnection = nil
-                end
-            end
-        end
-    end)
-    
-    return screenGui
-end
-
--- Função para remover o botão flutuante
-local function removerBotaoFlutuante()
-    if botaoFlutuante then
-        -- Parar loop se estiver executando
-        if loopConnection then
-            loopConnection:Disconnect()
-            loopConnection = nil
-        end
-        
-        botaoFlutuante:Destroy()
-        botaoFlutuante = nil
-        executandoLoop = false
-    end
-end
-
 -- Function to start orbiting
 local function startOrbit()
     if not gameBall then
@@ -742,7 +608,7 @@ local function StartAutoParry()
     end
 
     local lastParryTime = 0  
-    local currentCooldown = 0.6 -- Default cooldown  
+    local currentCooldown = 0.2 -- Default cooldown  
       
     ParryConnection = RunService.Heartbeat:Connect(function()  
         if not AutoParryEnabled then return end  
@@ -755,7 +621,7 @@ local function StartAutoParry()
         if closestPlayerDistance <= 35 then  
             currentCooldown = 0.0000000000000000000000000000000000000000000000000000000000000000000000000000001 -- Faster when player nearby  
         else  
-            currentCooldown = 0.6 -- Normal speed  
+            currentCooldown = 0.2 -- Normal speed  
         end  
           
         -- Check for players within 45 distance to adjust parry detection distance  
