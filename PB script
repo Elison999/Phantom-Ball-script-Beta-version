@@ -64,12 +64,10 @@ local normalCFrame = Camera.CFrame
 local curveConnection
 local lookConnection
 
-local floatingButtonEnabled = false
-local floatingButton = nil
-local connection = nil
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
+local toggleAtivado = false
+local botaoFlutuante = nil
+local executandoLoop = false
+local loopConnection = nil
 
 -- New variables for spam multiplication
 local AutoSpamMultiplicationEnabled = false
@@ -100,123 +98,138 @@ local BallESPEnabled = false
 local BallESP = nil
 local BallESPConnection = nil
 
-local function executeCode()
+local function executarCodigo()
     local args = {
         [1] = 2.933813859058389e+76
     }
-
+    
     game:GetService("ReplicatedStorage").TS.GeneratedNetworkRemotes:FindFirstChild("RE_4.6848415795802784e+76"):FireServer(unpack(args))
 end
 
-local function createFloatingButton()
+-- Função para criar o botão flutuante
+local function criarBotaoFlutuante()
+    -- Criar ScreenGui
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "FloatingButtonGui"
+    screenGui.Name = "BotaoFlutuanteGui"
+    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    -- Configurar para mobile
-    if UserInputService.TouchEnabled then
-        screenGui.DisplayOrder = 10
-    end
+    -- Criar Frame do botão
+    local botao = Instance.new("TextButton")
+    botao.Name = "BotaoFlutuante"
+    botao.Size = UDim2.new(0, 80, 0, 80)
+    botao.Position = UDim2.new(0, 20, 0.5, -40)
+    botao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    botao.BorderSizePixel = 0
+    botao.Text = "OFF"
+    botao.TextColor3 = Color3.fromRGB(255, 255, 255)
+    botao.TextSize = 16
+    botao.Font = Enum.Font.SourceSansBold
+    botao.Parent = screenGui
     
-    local button = Instance.new("TextButton")
-    button.Name = "FloatingButton"
-    button.Size = UDim2.new(0, 80, 0, 80)
-    button.Position = UDim2.new(0, 20, 0.5, -40)
-    button.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-    button.BorderSizePixel = 0
-    button.Font = Enum.Font.GothamBold
-    button.TextColor3 = Color3.white
-    button.TextSize = 14
-    button.Text = "OFF"
-    button.Parent = screenGui
-    
-    -- Arredondar cantos
+    -- Adicionar UICorner para deixar redondo
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 40)
-    corner.Parent = button
+    corner.CornerRadius = UDim.new(0.5, 0)
+    corner.Parent = botao
     
-    -- Adicionar sombra
-    local shadow = Instance.new("Frame")
-    shadow.Name = "Shadow"
-    shadow.Size = UDim2.new(1, 6, 1, 6)
-    shadow.Position = UDim2.new(0, -3, 0, -3)
-    shadow.BackgroundColor3 = Color3.new(0, 0, 0)
-    shadow.BackgroundTransparency = 0.7
-    shadow.ZIndex = button.ZIndex - 1
-    shadow.Parent = button
+    -- Adicionar UIStroke para borda
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(100, 100, 100)
+    stroke.Thickness = 2
+    stroke.Parent = botao
     
-    local shadowCorner = Instance.new("UICorner")
-    shadowCorner.CornerRadius = UDim.new(0, 43)
-    shadowCorner.Parent = shadow
+    -- Sistema de arrastar para mobile
+    local UserInputService = game:GetService("UserInputService")
+    local TweenService = game:GetService("TweenService")
     
-    screenGui.Parent = game:GetService("CoreGui")
-    
-    -- Variáveis para arrastar
     local dragging = false
     local dragStart = nil
     local startPos = nil
-    local isActive = false
     
-    -- Função para fazer o botão arrastável (compatível com mobile)
-    button.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = button.Position
-        end
-    end)
+    -- Função para começar a arrastar
+    local function startDrag(input)
+        dragging = true
+        dragStart = input.Position
+        startPos = botao.Position
+    end
     
-    button.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+    -- Função para atualizar posição durante o arraste
+    local function updateDrag(input)
+        if dragging then
             local delta = input.Position - dragStart
-            button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            botao.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end
+    
+    -- Função para parar de arrastar
+    local function stopDrag()
+        dragging = false
+    end
+    
+    -- Eventos de toque para mobile
+    botao.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            startDrag(input)
         end
     end)
     
-    button.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if dragging then
-                dragging = false
+    botao.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            updateDrag(input)
+        end
+    end)
+    
+    botao.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            stopDrag()
+        end
+    end)
+    
+    -- Funcionalidade do toggle
+    botao.Activated:Connect(function()
+        if not dragging then
+            executandoLoop = not executandoLoop
+            
+            if executandoLoop then
+                botao.Text = "ON"
+                botao.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+                stroke.Color = Color3.fromRGB(0, 200, 0)
                 
-                -- Se não arrastou muito, considera como clique
-                local dragDistance = (input.Position - dragStart).Magnitude
-                if dragDistance < 10 then
-                    -- Toggle do estado
-                    isActive = not isActive
-                    
-                    if isActive then
-                        button.Text = "ON"
-                        button.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
-                        
-                        -- Inicia a execução contínua
-                        connection = RunService.Heartbeat:Connect(function()
-                            executeCode()
-                        end)
-                    else
-                        button.Text = "OFF"
-                        button.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-                        
-                        -- Para a execução
-                        if connection then
-                            connection:Disconnect()
-                            connection = nil
-                        end
-                    end
-                    
-                    -- Animação de clique
-                    local clickTween = TweenService:Create(button, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 75, 0, 75)})
-                    clickTween:Play()
-                    clickTween.Completed:Connect(function()
-                        local backTween = TweenService:Create(button, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 80, 0, 80)})
-                        backTween:Play()
-                    end)
+                -- Iniciar loop de execução
+                loopConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                    wait(0.001)
+                    executarCodigo()
+                end)
+            else
+                botao.Text = "OFF"
+                botao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                stroke.Color = Color3.fromRGB(100, 100, 100)
+                
+                -- Parar loop de execução
+                if loopConnection then
+                    loopConnection:Disconnect()
+                    loopConnection = nil
                 end
             end
         end
     end)
     
     return screenGui
+end
+
+-- Função para remover o botão flutuante
+local function removerBotaoFlutuante()
+    if botaoFlutuante then
+        -- Parar loop se estiver executando
+        if loopConnection then
+            loopConnection:Disconnect()
+            loopConnection = nil
+        end
+        
+        botaoFlutuante:Destroy()
+        botaoFlutuante = nil
+        executandoLoop = false
+    end
 end
 
 -- Function to start orbiting
@@ -1022,27 +1035,16 @@ local ParryDistanceSlider = MainTab:CreateSlider({
 })
 
 local Toggle = MainTab:CreateToggle({
-    Name = "Manual Spam",
+    Name = "Ativar Botão Flutuante",
     CurrentValue = false,
-    Flag = "FloatingButtonToggle",
+    Flag = "BotaoFlutuanteToggle",
     Callback = function(Value)
-        floatingButtonEnabled = Value
+        toggleAtivado = Value
         
-        if Value then
-            -- Criar botão flutuante
-            floatingButton = createFloatingButton()
+        if toggleAtivado then
+            botaoFlutuante = criarBotaoFlutuante()
         else
-            -- Remover botão flutuante
-            if floatingButton then
-                floatingButton:Destroy()
-                floatingButton = nil
-            end
-            
-            -- Parar execução se estiver ativa
-            if connection then
-                connection:Disconnect()
-                connection = nil
-            end
+            removerBotaoFlutuante()
         end
     end,
 })
