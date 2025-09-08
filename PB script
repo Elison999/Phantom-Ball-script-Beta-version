@@ -900,21 +900,6 @@ local ParryDistanceSlider = MainTab:CreateSlider({
     end,
 })
 
-local Toggle = MainTab:CreateToggle({
-    Name = "Ativar Botão Flutuante",
-    CurrentValue = false,
-    Flag = "BotaoFlutuanteToggle",
-    Callback = function(Value)
-        toggleAtivado = Value
-        
-        if toggleAtivado then
-            botaoFlutuante = criarBotaoFlutuante()
-        else
-            removerBotaoFlutuante()
-        end
-    end,
-})
-
 -- Auto Spam Toggle
 local AutoSpamToggle = MainTab:CreateToggle({
     Name = "Auto Spam",
