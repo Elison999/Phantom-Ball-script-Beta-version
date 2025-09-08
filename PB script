@@ -608,7 +608,7 @@ local function StartAutoParry()
     end
 
     local lastParryTime = 0  
-    local currentCooldown = 0.2 -- Default cooldown  
+    local currentCooldown = 0.35 -- Default cooldown  
       
     ParryConnection = RunService.Heartbeat:Connect(function()  
         if not AutoParryEnabled then return end  
@@ -621,7 +621,7 @@ local function StartAutoParry()
         if closestPlayerDistance <= 35 then  
             currentCooldown = 0.0000000000000000000000000000000000000000000000000000000000000000000000000000001 -- Faster when player nearby  
         else  
-            currentCooldown = 0.2 -- Normal speed  
+            currentCooldown = 0.35 -- Normal speed  
         end  
           
         -- Check for players within 45 distance to adjust parry detection distance  
