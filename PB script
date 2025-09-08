@@ -1136,7 +1136,7 @@ spawn(function()
 end)
 
 -- Toggle to enable/disable orbit
-local OrbitToggle = MainTab:CreateToggle({
+local OrbitToggle = BallTab:CreateToggle({
    Name = "Orbit GameBall",
    CurrentValue = false,
    Flag = "OrbitToggle",
