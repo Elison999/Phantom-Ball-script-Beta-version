@@ -69,6 +69,11 @@ local botaoFlutuante = nil
 local executandoLoop = false
 local loopConnection = nil
 
+local LocalPlayer = Players.LocalPlayer
+local AutoSpamv3Enabled = false
+local AutoSpamDistV3 = 35
+local connection
+
 -- New variables for spam multiplication
 local AutoSpamMultiplicationEnabled = false
 local SpamMultiplier = 1
@@ -156,6 +161,7 @@ local MainTab = Window:CreateTab("Main", 4483362458)
 local VisualTab = Window:CreateTab("Visual", 4483362458)
 local BallTab = Window:CreateTab("Ball", 4483362458)
 local CurveTab = Window:CreateTab("Curve", 4483362458)
+local v3tab = Window:CreateTab("V3", 4483362458)
 
 -- NEW: Auto Spam V2 Detection Function
 local function IsPlayerAndBallWithinV2Range()
@@ -1235,6 +1241,122 @@ local AutoCurveToggle = CurveTab:CreateToggle({
         end
     end,
 })
+
+-- Slider for distance
+local DistanceSlider = v3tab:CreateSlider({
+   Name = "Distance",
+   Range = {10, 100},
+   Increment = 5,
+   Suffix = " studs",
+   CurrentValue = 35,
+   Flag = "DistanceSlider",
+   Callback = function(Value)
+      AutoSpamDistV3 = Value
+   end,
+})
+
+-- Toggle for Auto Spam
+local AutoSpamToggle = v3tab:CreateToggle({
+   Name = "Auto Spam v3",
+   CurrentValue = false,
+   Flag = "AutoSpamToggle",
+   Callback = function(Value)
+      AutoSpamv3Enabled = Value
+      
+      if AutoSpamv3Enabled then
+         -- Start the detection loop
+         connection = RunService.Heartbeat:Connect(function()
+            if not AutoSpamv3Enabled then
+               connection:Disconnect()
+               return
+            end
+            
+            -- Check if player character exists
+            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+               return
+            end
+            
+            local playerPosition = LocalPlayer.Character.HumanoidRootPart.Position
+            local playerDetected = false
+            
+            -- Check for players within distance
+            for _, player in pairs(Players:GetPlayers()) do
+               if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                  local distance = (playerPosition - player.Character.HumanoidRootPart.Position).Magnitude
+                  if distance <= AutoSpamDistV3 then
+                     playerDetected = true
+                     break
+                  end
+               end
+            end
+            
+            -- Check for GameBall with Really Red color
+            local gameBall = Workspace:FindFirstChild("GameBall")
+            local ballIsRed = false
+            
+            if gameBall and gameBall:IsA("BasePart") then
+               ballIsRed = (gameBall.BrickColor == BrickColor.new("Really red"))
+            end
+            
+            -- Execute if both conditions are met
+            if playerDetected and ballIsRed then
+               -- Execute the remote event twice
+               for i = 1, 2 do
+                  local args = {
+                     [1] = 2.933813859058389e+76
+                  }
+                  
+                  pcall(function()
+                     local remoteEvent = ReplicatedStorage.TS.GeneratedNetworkRemotes:FindFirstChild("RE_4.6848415795802784e+76")
+                     if remoteEvent then
+                        remoteEvent:FireServer(unpack(args))
+                     end
+                  end)
+               end
+               
+               wait(0.1) -- Small delay to prevent spam
+            end
+         end)
+      else
+         -- Stop the detection loop
+         if connection then
+            connection:Disconnect()
+         end
+      end
+   end,
+})
+
+-- Status section
+local StatusSection = v3tab:CreateSection("Ball Distance Status")
+
+local StatusLabel = v3tab:CreateLabel("Status: Disabled")
+
+-- Update status label with ball distance
+RunService.Heartbeat:Connect(function()
+   if AutoSpamv3Enabled then
+      local ballDistance = "N/A"
+      local gameBall = Workspace:FindFirstChild("GameBall")
+      
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and gameBall and gameBall:IsA("BasePart") then
+         local playerPosition = LocalPlayer.Character.HumanoidRootPart.Position
+         local distance = (playerPosition - gameBall.Position).Magnitude
+         ballDistance = math.floor(distance) .. " studs"
+      end
+      
+      local ballColorStatus = "Not Found"
+      if gameBall then
+         if gameBall.BrickColor == BrickColor.new("Really red") then
+            ballColorStatus = "Red (Active)"
+         else
+            ballColorStatus = "Wrong Color"
+         end
+      end
+      
+      StatusLabel:Set("Status: Active | Ball Distance: " .. ballDistance .. " | Ball: " .. ballColorStatus)
+   else
+      StatusLabel:Set("Status: Disabled")
+   end
+end)
 
 -- Cleanup when player leaves
 player.CharacterRemoving:Connect(function()
