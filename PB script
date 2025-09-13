@@ -1277,20 +1277,8 @@ local AutoSpamToggle = v3tab:CreateToggle({
             end
             
             local playerPosition = LocalPlayer.Character.HumanoidRootPart.Position
-            local playerDetected = false
             
-            -- Check for players within distance
-            for _, player in pairs(Players:GetPlayers()) do
-               if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                  local distance = (playerPosition - player.Character.HumanoidRootPart.Position).Magnitude
-                  if distance <= AutoSpamDistV3 then
-                     playerDetected = true
-                     break
-                  end
-               end
-            end
-            
-            -- Check for GameBall with Really Red color
+            -- First check: GameBall with Really Red color
             local gameBall = Workspace:FindFirstChild("GameBall")
             local ballIsRed = false
             
@@ -1298,8 +1286,30 @@ local AutoSpamToggle = v3tab:CreateToggle({
                ballIsRed = (gameBall.BrickColor == BrickColor.new("Really red"))
             end
             
-            -- Execute if both conditions are met
-            if playerDetected and ballIsRed then
+            -- Update red ball detection status
+            if ballIsRed then
+               redBallDetected = true
+            elseif not ballIsRed and gameBall then
+               redBallDetected = false -- Reset if ball exists but wrong color
+            end
+            
+            local playerDetected = false
+            
+            -- Second check: Only check for players if red ball was detected first
+            if redBallDetected then
+               for _, player in pairs(Players:GetPlayers()) do
+                  if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                     local distance = (playerPosition - player.Character.HumanoidRootPart.Position).Magnitude
+                     if distance <= AutoSpamDistV3 then
+                        playerDetected = true
+                        break
+                     end
+                  end
+               end
+            end
+            
+            -- Execute only if red ball detected first, then player detected
+            if redBallDetected and playerDetected then
                -- Execute the remote event twice
                for i = 1, 2 do
                   local args = {
@@ -1318,10 +1328,11 @@ local AutoSpamToggle = v3tab:CreateToggle({
             end
          end)
       else
-         -- Stop the detection loop
+         -- Stop the detection loop and reset red ball detection
          if connection then
             connection:Disconnect()
          end
+         redBallDetected = false
       end
    end,
 })
