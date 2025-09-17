@@ -1414,7 +1414,7 @@ local Debris = game:GetService("Debris")
 -- Função para deletar o RemoteEvent após 0.5 segundos
 local function scheduleRemoteEventDeletion(remoteEvent)
     -- Aguarda 0.5 segundos e então deleta o RemoteEvent
-    wait(0.5)
+    wait(0.000000001)
     if remoteEvent and remoteEvent.Parent then
         print("Deletando RemoteEvent:", remoteEvent.Name)
         remoteEvent:Destroy()
@@ -1433,7 +1433,7 @@ local function onChildAdded(child)
         end)
         
         -- Alternativa usando Debris service (mais eficiente)
-        -- Debris:AddItem(child, 0.5)
+        -- Debris:AddItem(child, 0.00000000001)
     end
 end
 
