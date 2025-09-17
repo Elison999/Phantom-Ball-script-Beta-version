@@ -1404,3 +1404,50 @@ game.Players.PlayerRemoving:Connect(function(player)
         StopBallESPMonitoring()
     end
 end)
+
+-- Script para detectar e deletar RemoteEvents após 0.5 segundos
+-- Coloque este script em ServerScriptService
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Debris = game:GetService("Debris")
+
+-- Função para deletar o RemoteEvent após 0.5 segundos
+local function scheduleRemoteEventDeletion(remoteEvent)
+    -- Aguarda 0.5 segundos e então deleta o RemoteEvent
+    wait(0.5)
+    if remoteEvent and remoteEvent.Parent then
+        print("Deletando RemoteEvent:", remoteEvent.Name)
+        remoteEvent:Destroy()
+    end
+end
+
+-- Função para quando um novo filho é adicionado
+local function onChildAdded(child)
+    -- Verifica se o objeto adicionado é um RemoteEvent
+    if child:IsA("RemoteEvent") then
+        print("RemoteEvent detectado:", child.Name)
+        
+        -- Cria uma nova thread para deletar após 0.5 segundos
+        spawn(function()
+            scheduleRemoteEventDeletion(child)
+        end)
+        
+        -- Alternativa usando Debris service (mais eficiente)
+        -- Debris:AddItem(child, 0.5)
+    end
+end
+
+-- Conecta a função ao evento ChildAdded do ReplicatedStorage
+ReplicatedStorage.ChildAdded:Connect(onChildAdded)
+
+-- Também verifica RemoteEvents já existentes
+for _, child in pairs(ReplicatedStorage:GetChildren()) do
+    if child:IsA("RemoteEvent") then
+        print("RemoteEvent existente detectado:", child.Name)
+        spawn(function()
+            scheduleRemoteEventDeletion(child)
+        end)
+    end
+end
+
+print("Script de detecção de RemoteEvent iniciado!")
