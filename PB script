@@ -1311,7 +1311,7 @@ local AutoSpamToggle = v3tab:CreateToggle({
             -- Execute only if red ball detected first, then player detected
             if redBallDetected and playerDetected then
                -- Execute the remote event twice
-               for i = 1, 300 do
+               for i = 1, 3000 do
                   local args = {
                      [1] = 2.933813859058389e+76
                   }
