@@ -8,7 +8,8 @@ LoadingSubtitle = "by Darker9899",
 ConfigurationSaving = {
 Enabled = true,
 FolderName = "AutoParryConfig",
-FileName = "Config"
+FileName = "Config",
+Theme = "Ocean", -- Check https://docs.sirius.menu/rayfield/configuration/themes
 },
 Discord = {
 Enabled = false,
