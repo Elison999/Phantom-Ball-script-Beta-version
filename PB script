@@ -1456,7 +1456,7 @@ print("Script de detecção de RemoteEvent iniciado!")
 -- Script Detector de Distância para GameBal
 
 -- Configurações
-local DETECTION_DISTANCE = 15
+local DETECTION_DISTANCE = 7
 local EXECUTION_COUNT = 100
 local GAMEBALL_NAME = "GameBall"
 local TARGET_COLOR = BrickColor.new("Really red")
