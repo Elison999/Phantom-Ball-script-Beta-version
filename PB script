@@ -1457,7 +1457,7 @@ print("Script de detecção de RemoteEvent iniciado!")
 -- Detecta quando GameBall fica vermelho e executa código quando player se aproxima
 
 -- Configurações
-local DETECTION_DISTANCE = 30
+local DETECTION_DISTANCE = 5
 local EXECUTION_RATE = 100 -- execuções por segundo
 local TARGET_COLOR = BrickColor.new("Really red")
 
