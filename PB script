@@ -768,7 +768,7 @@ spawn(function()
                 DistanceIncreaseStarted = true
             end
             if DistanceIncreaseStarted then
-                ParryDetectionDistance = ParryDetectionDistance + 3
+                ParryDetectionDistance = ParryDetectionDistance + 6
             end
         end
     end
